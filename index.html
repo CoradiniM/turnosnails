@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nails Studio — Reservá tu turno</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          screens: { xs: '380px' },
+          colors: {
+            blush: {
+              50: '#fff5f8',
+              100: '#ffe8f0',
+              200: '#ffd6e8',
+              300: '#ffc2db',
+              400: '#f9a8c9',
+              500: '#f472b6',
+              600: '#ec4899',
+            },
+            mauve: {
+              400: '#a8919a',
+              500: '#8b7280',
+              600: '#6d5a65',
+              700: '#5c4f56',
+              800: '#3d3439',
+              900: '#2a2327',
+            }
+          },
+          fontFamily: {
+            display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['"Outfit"', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            soft: '0 4px 24px -4px rgba(244, 114, 182, 0.14)',
+            card: '0 8px 32px -8px rgba(244, 114, 182, 0.18)',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      -webkit-tap-highlight-color: transparent;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    .service-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    }
+    .service-card:hover { transform: translateY(-2px); }
+    .service-card.selected {
+      border-color: #f9a8c9;
+      background: linear-gradient(135deg, #fff5f8 0%, #ffe8f0 100%);
+      box-shadow: 0 8px 32px -8px rgba(244, 114, 182, 0.22);
+    }
+    .service-card.selected .check-icon { opacity: 1; transform: scale(1); }
+
+    .time-slot { transition: all 0.2s ease; }
+    .time-slot.selected {
+      background: linear-gradient(135deg, #f9a8c9, #ec4899);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 16px -4px rgba(236, 72, 153, 0.35);
+    }
+
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244, 114, 182, 0.45); }
+      50% { box-shadow: 0 0 0 10px rgba(244, 114, 182, 0); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes bounce-num {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .promo-banner {
+      background: linear-gradient(135deg, #f472b6 0%, #ec4899 45%, #f9a8c9 100%);
+      animation: pulse-glow 2.5s ease-in-out infinite;
+    }
+    .promo-shimmer {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 3s linear infinite;
+    }
+    .counter-num { animation: bounce-num 2s ease-in-out infinite; }
+
+    input:focus, select:focus { outline: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #f9a8c9 0%, #ec4899 100%);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -6px rgba(236, 72, 153, 0.4);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.6;
+      filter: hue-rotate(300deg);
+    }
+
+    .promo-slot {
+      transition: width 0.6s ease;
+    }
+  </style>
+</head>
+<body class="bg-blush-50 font-sans text-mauve-800 min-h-screen">
+
+  <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div class="absolute -top-32 -right-32 w-64 sm:w-96 h-64 sm:h-96 bg-blush-300/40 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 -left-48 w-56 sm:w-80 h-56 sm:h-80 bg-blush-200/50 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-24 right-1/4 w-48 sm:w-72 h-48 sm:h-72 bg-blush-300/30 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="max-w-lg mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 pb-32 sm:pb-28">
+
+    <!-- HEADER -->
+    <header class="text-center mb-6 fade-in">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blush-300 mb-4 shadow-soft border-2 border-blush-200 overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1604654894610-df63bc536371?w=160&h=160&fit=crop&crop=center"
+          alt="Nails Studio"
+          class="w-full h-full object-cover"
+        />
+      </div>
+      <h1 class="font-display text-3xl xs:text-4xl sm:text-5xl font-semibold text-mauve-900 tracking-tight px-2">
+        <span class="text-blush-500 italic">Nails Studio</span>
+      </h1>
+      <p class="mt-3 text-mauve-600 text-base sm:text-lg leading-relaxed max-w-sm mx-auto">
+        Manicura profesional con estilo. Reservá tu turno y lucí unas uñas impecables.
+      </p>
+      <div class="mt-4 flex items-center justify-center gap-2 text-sm text-blush-500">
+        <span class="w-8 h-px bg-blush-300"></span>
+        <span>✦ Lista de Precios ✦</span>
+        <span class="w-8 h-px bg-blush-300"></span>
+      </div>
+    </header>
+
+    <!-- PROMO MARKETING BANNER -->
+    <section id="promoSection" class="mb-8 fade-in relative overflow-hidden rounded-2xl promo-banner text-white shadow-card">
+      <div class="promo-shimmer absolute inset-0 pointer-events-none"></div>
+      <div class="relative p-5 sm:p-6">
+        <div class="flex flex-col xs:flex-row xs:items-start xs:justify-between gap-3 mb-3">
+          <div class="min-w-0">
+            <span class="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-wider mb-2">
+              🔥 Promo Lanzamiento
+            </span>
+            <h2 class="font-display text-xl sm:text-2xl font-semibold leading-tight">
+              ¡Brillo o decoración GRATIS!
+            </h2>
+            <p class="text-white/80 text-sm mt-1.5 leading-relaxed">
+              Para las <strong class="text-white">primeras 10 clientas</strong> del mes. Elegí brillo, decoración o un detalle especial sin cargo extra.
+            </p>
+          </div>
+          <div class="text-3xl flex-shrink-0">✨</div>
+        </div>
+
+        <!-- Counter -->
+        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+          <div class="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap mb-3">
+            <div class="flex-1 min-w-[120px]">
+              <p class="text-xs text-white/70 uppercase tracking-wide">Lugares disponibles</p>
+              <div class="flex items-baseline gap-1.5 mt-1">
+                <span id="promoCounter" class="counter-num text-4xl font-bold tabular-nums">10</span>
+                <span class="text-white/60 text-lg">/ 10</span>
+              </div>
+            </div>
+            <div id="promoUrgency" class="text-right flex-1 min-w-[120px]">
+              <p class="text-xs text-white/70 uppercase tracking-wide">Termina en</p>
+              <p id="promoCountdown" class="text-lg font-semibold tabular-nums mt-1">--:--:--</p>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+            <div id="promoProgress" class="promo-slot h-full bg-gradient-to-r from-blush-200 to-white rounded-full" style="width: 100%"></div>
+          </div>
+          <p id="promoStatusText" class="text-xs text-white/70 mt-2 text-center">
+            ⚡ Reservá ahora antes de que se agoten los lugares
+          </p>
+        </div>
+
+        <!-- Promo checkbox (visible when promo active) -->
+        <label id="promoCheckboxWrap" class="flex items-center gap-3 mt-4 cursor-pointer group">
+          <input type="checkbox" id="claimPromo" checked class="w-5 h-5 flex-shrink-0 rounded accent-blush-400 cursor-pointer" />
+          <span class="text-sm text-white/90 group-hover:text-white transition-colors">
+            🎁 Quiero mi regalo de lanzamiento (brillo o decoración gratis)
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Sold out promo state (hidden by default) -->
+    <section id="promoSoldOut" class="hidden mb-8 rounded-2xl bg-blush-200/60 border border-blush-300 p-5 text-center">
+      <p class="text-mauve-600 text-sm">La promo de lanzamiento ya se agotó 😢</p>
+      <p class="text-mauve-800 font-medium mt-1">¡Seguí reservando! Pronto habrá nuevas sorpresas ✨</p>
+    </section>
+
+    <div id="summaryBar" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-blush-200 px-4 py-3 shadow-card" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
+      <div class="max-w-lg mx-auto flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs text-mauve-500 uppercase tracking-wide">Total estimado</p>
+          <p id="summaryTotal" class="text-xl font-semibold text-blush-600">$0</p>
+        </div>
+        <div class="text-right">
+          <p id="summaryServices" class="text-sm text-mauve-600">Sin servicios</p>
+          <p id="summaryDuration" class="text-xs text-mauve-500"></p>
+        </div>
+      </div>
+    </div>
+
+    <form id="bookingForm" class="space-y-8" novalidate>
+
+      <!-- SERVICIOS -->
+      <section class="fade-in" style="animation-delay: 0.1s">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="flex items-center justify-center w-8 h-8 rounded-full bg-blush-200 text-blush-600 text-sm font-semibold">1</span>
+          <h2 class="font-display text-xl font-semibold text-mauve-900">Servicios</h2>
+        </div>
+        <p class="text-sm text-mauve-500 mb-4 sm:ml-11">Seleccioná uno o más servicios</p>
+        <div id="servicesGrid" class="grid gap-3 ml-0 sm:ml-11"></div>
+        <p id="servicesError" class="hidden mt-2 sm:ml-11 text-sm text-red-500">Seleccioná al menos un servicio</p>
+      </section>
+
+      <!-- FECHA Y HORA -->
+      <section class="fade-in" style="animation-delay: 0.2s">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="flex items-center justify-center w-8 h-8 rounded-full bg-blush-200 text-blush-600 text-sm font-semibold">2</span>
+          <h2 class="font-display text-xl font-semibold text-mauve-900">Fecha y hora</h2>
+        </div>
+        <div class="ml-0 sm:ml-11 space-y-4">
+          <div>
+            <label for="date" class="block text-sm font-medium text-mauve-600 mb-2">Fecha del turno</label>
+            <input type="date" id="date" name="date" required
+              class="w-full px-4 py-3 rounded-xl border border-blush-300 bg-white/80 focus:border-blush-500 focus:ring-2 focus:ring-blush-200 transition-all text-mauve-800" />
+            <p id="dateError" class="hidden mt-2 text-sm text-red-500">Seleccioná una fecha válida</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-mauve-600 mb-2">Horario disponible</label>
+            <div id="timeSlots" class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2"></div>
+            <input type="hidden" id="time" name="time" required />
+            <p id="timeError" class="hidden mt-2 text-sm text-red-500">Seleccioná un horario</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- DATOS -->
+      <section class="fade-in" style="animation-delay: 0.3s">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="flex items-center justify-center w-8 h-8 rounded-full bg-blush-200 text-blush-600 text-sm font-semibold">3</span>
+          <h2 class="font-display text-xl font-semibold text-mauve-900">Tus datos</h2>
+        </div>
+        <div class="ml-0 sm:ml-11 space-y-4">
+          <div>
+            <label for="fullName" class="block text-sm font-medium text-mauve-600 mb-2">Nombre y apellido</label>
+            <input type="text" id="fullName" name="fullName" placeholder="Ej: María González" required autocomplete="name"
+              class="w-full px-4 py-3 rounded-xl border border-blush-300 bg-white/80 focus:border-blush-500 focus:ring-2 focus:ring-blush-200 transition-all placeholder:text-blush-400" />
+            <p id="nameError" class="hidden mt-2 text-sm text-red-500">Ingresá tu nombre completo</p>
+          </div>
+          <div>
+            <label for="phone" class="block text-sm font-medium text-mauve-600 mb-2">WhatsApp</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-mauve-400 text-sm">+54</span>
+              <input type="tel" id="phone" name="phone" placeholder="11 3830 6366" required autocomplete="tel" inputmode="numeric"
+                class="w-full pl-14 pr-4 py-3 rounded-xl border border-blush-300 bg-white/80 focus:border-blush-500 focus:ring-2 focus:ring-blush-200 transition-all placeholder:text-blush-400" />
+            </div>
+            <p id="phoneError" class="hidden mt-2 text-sm text-red-500">Ingresá un número válido (mín. 8 dígitos)</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESUMEN -->
+      <section class="fade-in bg-white/70 backdrop-blur-sm rounded-2xl border border-blush-200 p-4 sm:p-5 shadow-soft" style="animation-delay: 0.4s">
+        <h3 class="font-display text-lg font-semibold text-mauve-900 mb-3">Resumen del turno</h3>
+        <div id="orderSummary" class="space-y-2 text-sm text-mauve-600 mb-4">
+          <p class="text-mauve-400 italic">Completá el formulario para ver el resumen</p>
+        </div>
+        <div id="promoSummaryLine" class="hidden flex items-center justify-between text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2 mb-3">
+          <span>🎁 Regalo promo lanzamiento</span>
+          <span class="font-semibold">GRATIS</span>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-blush-200 mb-5">
+          <span class="font-medium text-mauve-700">Total a pagar</span>
+          <span id="totalDisplay" class="text-2xl font-semibold text-blush-600">$0</span>
+        </div>
+        <button type="submit" id="submitBtn"
+          class="btn-primary w-full py-4 rounded-xl text-white font-semibold text-base flex items-center justify-center gap-2 shadow-soft">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.776-.916-2.433-.242-.647-.487-1.085-.669-1.085-.173 0-.371-.099-.571-.099-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.885-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          Confirmar turno por WhatsApp
+        </button>
+        <p class="text-center text-xs text-mauve-400 mt-3">Te redirigiremos a WhatsApp con tu reserva lista para enviar</p>
+      </section>
+    </form>
+
+    <footer class="text-center mt-10 text-sm text-mauve-500 space-y-2">
+      <p>Nails Studio © 2026</p>
+      <p class="text-mauve-500">11 6553-5403</p>
+    </footer>
+  </div>
+
+  <script>
+    const WHATSAPP_NUMBER = '5491165535403';
+    const PROMO_TOTAL = 10;
+    const COUNT_API_NS = 'nailsstudiopromo5403';
+    const COUNT_API_KEY = 'regalos';
+
+    const SERVICES = [
+      { id: 'semi', name: 'Esmaltado Semipermanente', price: 8000, duration: 60, durationLabel: '1h' },
+      { id: 'capping', name: 'Capping', price: 12000, duration: 90, durationLabel: '1h 30m' },
+      { id: 'softgel', name: 'Soft Gel', price: 15000, duration: 120, durationLabel: '2h' },
+      { id: 'retiro', name: 'Solo Retiro', price: 3000, duration: 30, durationLabel: '30m' },
+    ];
+
+    const TIME_SLOTS = ['09:00', '10:30', '14:00', '16:00', '17:30'];
+
+    const selectedServices = new Set();
+    let selectedTime = '';
+
+    // --- Promo counter (tiempo real vía CountAPI) ---
+    let promoClaimed = 0;
+
+    async function initPromoCounter() {
+      try {
+        await fetch(`https://api.countapi.xyz/create?namespace=${COUNT_API_NS}&key=${COUNT_API_KEY}&value=0`, { method: 'POST' });
+      } catch (_) {}
+      await syncPromoCounter();
+      setInterval(syncPromoCounter, 10000);
+    }
+
+    async function syncPromoCounter() {
+      try {
+        const res = await fetch(`https://api.countapi.xyz/get/${COUNT_API_NS}/${COUNT_API_KEY}`);
+        if (!res.ok) throw new Error('fetch failed');
+        const data = await res.json();
+        promoClaimed = Math.min(PROMO_TOTAL, Math.max(0, data.value ?? 0));
+      } catch (_) {}
+      updatePromoUI();
+    }
+
+    async function incrementPromoClaimed() {
+      try {
+        const res = await fetch(`https://api.countapi.xyz/hit/${COUNT_API_NS}/${COUNT_API_KEY}`, { method: 'POST' });
+        if (!res.ok) throw new Error('hit failed');
+        const data = await res.json();
+        promoClaimed = Math.min(PROMO_TOTAL, Math.max(0, data.value ?? promoClaimed + 1));
+        updatePromoUI();
+      } catch (_) {}
+    }
+
+    function getPromoRemaining() {
+      return Math.max(0, PROMO_TOTAL - promoClaimed);
+    }
+
+    function isPromoActive() {
+      return promoClaimed < PROMO_TOTAL;
+    }
+
+    function updatePromoUI() {
+      const remaining = getPromoRemaining();
+      const counter = document.getElementById('promoCounter');
+      const progress = document.getElementById('promoProgress');
+      const statusText = document.getElementById('promoStatusText');
+      const promoSection = document.getElementById('promoSection');
+      const soldOut = document.getElementById('promoSoldOut');
+      const pct = (remaining / PROMO_TOTAL) * 100;
+
+      if (remaining <= 0) {
+        promoSection.classList.add('hidden');
+        soldOut.classList.remove('hidden');
+        document.getElementById('promoSummaryLine').classList.add('hidden');
+        return;
+      }
+
+      promoSection.classList.remove('hidden');
+      soldOut.classList.add('hidden');
+      counter.textContent = remaining;
+      progress.style.width = pct + '%';
+
+      if (remaining <= 3) {
+        statusText.innerHTML = '🔥 <strong class="text-blush-100">¡Últimos lugares!</strong> Reservá ya antes de que se agoten';
+        counter.classList.add('text-blush-100');
+      } else if (remaining <= 5) {
+        statusText.textContent = '⚡ Quedan pocos lugares — no te quedes afuera de la promo';
+        counter.classList.remove('text-blush-100');
+      } else {
+        statusText.textContent = '✨ Aprovechá tu regalo de brillo o decoración gratis';
+        counter.classList.remove('text-blush-100');
+      }
+
+      updateSummary();
+    }
+
+    // Countdown to end of month
+    function updateCountdown() {
+      const now = new Date();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      const diff = endOfMonth - now;
+      if (diff <= 0) {
+        document.getElementById('promoCountdown').textContent = '00:00:00';
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+      const el = document.getElementById('promoCountdown');
+      if (days > 0) {
+        el.textContent = `${days}d ${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+      } else {
+        el.textContent = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+      }
+    }
+
+    initPromoCounter();
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    document.getElementById('claimPromo').addEventListener('change', updateSummary);
+
+    const formatPrice = (n) => '$' + n.toLocaleString('es-AR');
+    const formatDuration = (minutes) => {
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      if (h === 0) return `${m}m`;
+      if (m === 0) return `${h}h`;
+      return `${h}h ${m}m`;
+    };
+
+    const servicesGrid = document.getElementById('servicesGrid');
+    SERVICES.forEach((service) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.dataset.id = service.id;
+      card.className = 'service-card text-left w-full p-3.5 sm:p-4 rounded-xl border-2 border-blush-200 bg-white/80 shadow-soft';
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="font-medium text-mauve-900 leading-snug">${service.name}</h3>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="text-blush-600 font-semibold">${formatPrice(service.price)}</span>
+              <span class="text-xs text-mauve-400 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                ${service.durationLabel}
+              </span>
+            </div>
+          </div>
+          <div class="check-icon w-6 h-6 rounded-full bg-blush-500 flex items-center justify-center opacity-0 scale-75 transition-all duration-200 flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+        </div>`;
+      card.addEventListener('click', () => toggleService(service.id, card));
+      servicesGrid.appendChild(card);
+    });
+
+    function toggleService(id, card) {
+      if (selectedServices.has(id)) {
+        selectedServices.delete(id);
+        card.classList.remove('selected');
+      } else {
+        selectedServices.add(id);
+        card.classList.add('selected');
+      }
+      document.getElementById('servicesError').classList.add('hidden');
+      updateSummary();
+    }
+
+    const timeSlotsEl = document.getElementById('timeSlots');
+    TIME_SLOTS.forEach((slot) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.time = slot;
+      btn.textContent = slot;
+      btn.className = 'time-slot py-3 sm:py-2.5 px-2 rounded-xl border border-blush-300 bg-white/80 text-sm font-medium text-mauve-700 hover:border-blush-400 min-h-[44px]';
+      btn.addEventListener('click', () => selectTime(slot, btn));
+      timeSlotsEl.appendChild(btn);
+    });
+
+    function selectTime(time, btn) {
+      selectedTime = time;
+      document.getElementById('time').value = time;
+      document.querySelectorAll('.time-slot').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('timeError').classList.add('hidden');
+      updateSummary();
+    }
+
+    const dateInput = document.getElementById('date');
+    const today = new Date();
+    dateInput.min = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    dateInput.addEventListener('change', () => {
+      document.getElementById('dateError').classList.add('hidden');
+      updateSummary();
+    });
+
+    function getSelectedServicesData() {
+      return SERVICES.filter((s) => selectedServices.has(s.id));
+    }
+
+    function wantsPromo() {
+      return isPromoActive() && document.getElementById('claimPromo').checked;
+    }
+
+    function updateSummary() {
+      const selected = getSelectedServicesData();
+      const total = selected.reduce((sum, s) => sum + s.price, 0);
+      const totalMinutes = selected.reduce((sum, s) => sum + s.duration, 0);
+      const date = dateInput.value;
+      const name = document.getElementById('fullName').value.trim();
+
+      document.getElementById('totalDisplay').textContent = formatPrice(total);
+      document.getElementById('summaryTotal').textContent = formatPrice(total);
+
+      const promoLine = document.getElementById('promoSummaryLine');
+      if (wantsPromo()) {
+        promoLine.classList.remove('hidden');
+        promoLine.classList.add('flex');
+      } else {
+        promoLine.classList.add('hidden');
+        promoLine.classList.remove('flex');
+      }
+
+      const summaryBar = document.getElementById('summaryBar');
+      if (selected.length > 0) {
+        summaryBar.classList.remove('hidden');
+        document.getElementById('summaryServices').textContent =
+          selected.length === 1 ? selected[0].name : `${selected.length} servicios`;
+        document.getElementById('summaryDuration').textContent =
+          totalMinutes > 0 ? `~ ${formatDuration(totalMinutes)}` : '';
+      } else {
+        summaryBar.classList.add('hidden');
+      }
+
+      const orderSummary = document.getElementById('orderSummary');
+      if (selected.length === 0 && !date && !selectedTime && !name) {
+        orderSummary.innerHTML = '<p class="text-mauve-400 italic">Completá el formulario para ver el resumen</p>';
+        return;
+      }
+
+      let html = '';
+      if (selected.length > 0) {
+        html += selected.map((s) =>
+          `<div class="flex justify-between"><span>${s.name}</span><span class="text-blush-600">${formatPrice(s.price)}</span></div>`
+        ).join('');
+      }
+      if (wantsPromo()) {
+        html += `<div class="flex justify-between text-emerald-700"><span>🎁 Brillo/decoración promo</span><span class="font-medium">GRATIS</span></div>`;
+      }
+      if (date) {
+        const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('es-AR', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+        html += `<div class="flex justify-between pt-2 border-t border-blush-100"><span>Fecha</span><span class="capitalize">${formattedDate}</span></div>`;
+      }
+      if (selectedTime) {
+        html += `<div class="flex justify-between"><span>Hora</span><span>${selectedTime} hs</span></div>`;
+      }
+      if (name) {
+        html += `<div class="flex justify-between"><span>Cliente</span><span>${name}</span></div>`;
+      }
+      orderSummary.innerHTML = html || '<p class="text-mauve-400 italic">Completá el formulario para ver el resumen</p>';
+    }
+
+    document.getElementById('fullName').addEventListener('input', updateSummary);
+
+    function validate() {
+      let valid = true;
+      if (selectedServices.size === 0) {
+        document.getElementById('servicesError').classList.remove('hidden');
+        valid = false;
+      }
+      const date = dateInput.value;
+      if (!date) {
+        document.getElementById('dateError').classList.remove('hidden');
+        document.getElementById('dateError').textContent = 'Seleccioná una fecha';
+        valid = false;
+      } else {
+        const chosen = new Date(date + 'T00:00:00');
+        const now = new Date(); now.setHours(0,0,0,0);
+        if (chosen < now) {
+          document.getElementById('dateError').classList.remove('hidden');
+          document.getElementById('dateError').textContent = 'No podés elegir fechas pasadas';
+          valid = false;
+        }
+      }
+      if (!selectedTime) {
+        document.getElementById('timeError').classList.remove('hidden');
+        valid = false;
+      }
+      const name = document.getElementById('fullName').value.trim();
+      if (name.length < 3) {
+        document.getElementById('nameError').classList.remove('hidden');
+        valid = false;
+      } else {
+        document.getElementById('nameError').classList.add('hidden');
+      }
+      const phone = document.getElementById('phone').value.replace(/\D/g, '');
+      if (phone.length < 8) {
+        document.getElementById('phoneError').classList.remove('hidden');
+        valid = false;
+      } else {
+        document.getElementById('phoneError').classList.add('hidden');
+      }
+      return valid;
+    }
+
+    function buildWhatsAppMessage() {
+      const selected = getSelectedServicesData();
+      const total = selected.reduce((sum, s) => sum + s.price, 0);
+      const totalMinutes = selected.reduce((sum, s) => sum + s.duration, 0);
+      const name = document.getElementById('fullName').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const date = dateInput.value;
+      const formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('es-AR', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+      const servicesList = selected
+        .map((s) => `  • ${s.name} — ${formatPrice(s.price)} (${s.durationLabel})`)
+        .join('\n');
+
+      let msg = (
+        `💅 *Nueva reserva — Nails Studio*\n\n` +
+        `👤 *Cliente:* ${name}\n` +
+        `📱 *WhatsApp:* ${phone}\n\n` +
+        `✨ *Servicios:*\n${servicesList}\n\n` +
+        `💰 *Total:* ${formatPrice(total)}\n` +
+        `⏱ *Duración estimada:* ${formatDuration(totalMinutes)}\n\n` +
+        `📅 *Fecha:* ${formattedDate}\n` +
+        `🕐 *Hora:* ${selectedTime} hs\n\n`
+      );
+
+      if (wantsPromo()) {
+        msg += `🎁 *PROMO LANZAMIENTO:* Quiero mi regalo de brillo o decoración GRATIS\n\n`;
+      }
+
+      msg += `_Reserva enviada desde la web_`;
+      return msg;
+    }
+
+    document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validate()) {
+        const firstError = document.querySelector('[id$="Error"]:not(.hidden)');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      if (wantsPromo()) {
+        await incrementPromoClaimed();
+      }
+
+      const message = encodeURIComponent(buildWhatsAppMessage());
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+    });
+  </script>
+</body>
+</html>
