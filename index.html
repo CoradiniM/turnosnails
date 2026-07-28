@@ -180,7 +180,26 @@
         </div>
 
         <!-- Counter -->
-    
+        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+          <div class="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap mb-3">
+            <div class="flex-1 min-w-[120px]">
+            
+            </div>
+            <div id="promoUrgency" class="text-right flex-1 min-w-[120px]">
+              <p class="text-xs text-white/70 uppercase tracking-wide">Termina en</p>
+              <p id="promoCountdown" class="text-lg font-semibold tabular-nums mt-1">--:--:--</p>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+            <div id="promoProgress" class="promo-slot h-full bg-gradient-to-r from-blush-200 to-white rounded-full" style="width: 100%"></div>
+          </div>
+          <p id="promoStatusText" class="text-xs text-white/70 mt-2 text-center">
+            ⚡ Reservá ahora antes de que se agoten los lugares
+          </p>
+        </div>
+
         <!-- Promo checkbox (visible when promo active) -->
         <label id="promoCheckboxWrap" class="flex items-center gap-3 mt-4 cursor-pointer group">
           <input type="checkbox" id="claimPromo" checked class="w-5 h-5 flex-shrink-0 rounded accent-blush-400 cursor-pointer" />
